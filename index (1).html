@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر مس بندق</title>
+    <!-- Include Inter font from Google Fonts (for regular text) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Include Dancing Script font from Google Fonts (for decorative title) -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Include Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            direction: rtl; /* Text direction right-to-left */
+            text-align: right; /* Text alignment right */
+        }
+        /* Style for the cart */
+        #cart-modal, #checkout-modal, #order-message, #stc-pay-modal {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        #cart-modal.active, #checkout-modal.active, #order-message.active, #stc-pay-modal.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        /* Style for the decorative font on the title */
+        .decorative-font {
+            font-family: 'Dancing Script', cursive;
+            font-weight: 700;
+            font-size: 3.5rem; /* Larger font size */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Light shadow */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen relative">
+    <!-- Main container for the shop app -->
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm border border-gray-200">
+        <!-- Top bar with language and cart buttons -->
+        <div class="flex justify-between items-center mb-4">
+            <button id="lang-btn" class="text-sm text-gray-500 hover:text-gray-800 transition-colors duration-200">
+                English
+            </button>
+            <button id="cart-btn" class="text-gray-500 hover:text-gray-800 transition-colors duration-200 relative">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.182 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span id="cart-count" class="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">0</span>
+            </button>
+        </div>
+
+        <!-- Logo section with the store name -->
+        <div class="flex items-center justify-center flex-col mb-4">
+            <img src="https://placehold.co/100x100/123456/white?text=Nut+Butters" alt="Ms. Nut Shop Logo" class="w-24 h-24 rounded-full mb-2">
+            <h1 id="main-title" class="text-3xl font-extrabold text-center text-gray-800 decorative-font">
+                مس بندق
+            </h1>
+        </div>
+        <!-- Short product description -->
+        <p id="main-description" class="text-center text-gray-600 mb-8">
+            أفضل أنواع زبدة المكسرات الطبيعية الطازجة، صحية ومغذية.
+        </p>
+
+        <!-- Product display section -->
+        <div id="products-container" class="space-y-4">
+            <!-- Products will be added here automatically by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Shopping Cart (initially hidden) -->
+    <div id="cart-modal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="cart-title" class="text-2xl font-bold text-gray-800">سلة التسوق</h2>
+                <button id="close-cart-btn" class="text-gray-500 hover:text-gray-800 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="cart-items" class="space-y-4 max-h-60 overflow-y-auto">
+                <!-- Cart items will be displayed here -->
+            </div>
+            <div id="cart-summary" class="mt-6 border-t pt-4">
+                <div class="flex justify-between items-center">
+                    <span id="total-text" class="text-lg font-semibold text-gray-800">الإجمالي:</span>
+                    <span id="cart-total" class="text-2xl font-bold text-green-600">0 SAR</span>
+                </div>
+                <button id="checkout-btn" class="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition-colors duration-300 shadow-lg">
+                    الدفع
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Information Form -->
+    <div id="checkout-modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm">
+            <h2 id="checkout-title" class="text-2xl font-bold text-gray-800 mb-4">معلومات الشحن</h2>
+            <form id="checkout-form" class="space-y-4">
+                <!-- Service type selection -->
+                <div class="pt-4">
+                    <label class="block text-gray-700 font-bold mb-2">نوع الخدمة:</label>
+                    <div class="flex flex-col space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="service-type" value="delivery" class="form-radio text-green-600" checked>
+                            <span class="mr-2 text-gray-700">توصيل</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="service-type" value="pickup" class="form-radio text-green-600">
+                            <span class="mr-2 text-gray-700">استلام من الفرع</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Delivery fields (visible by default) -->
+                <div id="delivery-fields">
+                    <div>
+                        <label for="customer-name" class="block text-gray-700">الاسم:</label>
+                        <input type="text" id="customer-name" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200" required>
+                    </div>
+                    <div>
+                        <label for="customer-phone" class="block text-gray-700">رقم الجوال:</label>
+                        <input type="tel" id="customer-phone" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200" required>
+                    </div>
+                    <div>
+                        <label for="country-select" class="block text-gray-700">الدولة:</label>
+                        <select id="country-select" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200"></select>
+                    </div>
+                    <div>
+                        <label for="city-select" class="block text-gray-700">المدينة:</label>
+                        <select id="city-select" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200" required></select>
+                    </div>
+                    <div>
+                        <label for="customer-address" class="block text-gray-700">عنوان الشارع والمبنى:</label>
+                        <textarea id="customer-address" rows="3" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200" required></textarea>
+                    </div>
+                </div>
+
+                <!-- Pickup fields (hidden by default) -->
+                <div id="pickup-fields" class="hidden">
+                    <div>
+                        <label for="customer-name-pickup" class="block text-gray-700">الاسم:</label>
+                        <input type="text" id="customer-name-pickup" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200" required>
+                    </div>
+                    <div>
+                        <label for="customer-phone-pickup" class="block text-gray-700">رقم الجوال:</label>
+                        <input type="tel" id="customer-phone-pickup" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200" required>
+                    </div>
+                    <div>
+                        <label for="pickup-location-select" class="block text-gray-700">موقع الاستلام:</label>
+                        <select id="pickup-location-select" class="w-full mt-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-green-200">
+                            <!-- Options will be added here by JavaScript -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Payment options (available for both) -->
+                <div class="pt-4">
+                    <label class="block text-gray-700 font-bold mb-2">طريقة الدفع:</label>
+                    <div class="flex flex-col space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="payment-method" value="stc-pay" class="form-radio text-green-600" checked>
+                            <span class="mr-2 text-gray-700">stc pay</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="payment-method" value="cash-on-delivery" class="form-radio text-green-600">
+                            <span class="mr-2 text-gray-700">الدفع عند الاستلام</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <button type="submit" id="submit-order-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition-colors duration-300 shadow-lg">
+                        إرسال الطلب
+                    </button>
+                    <button type="button" id="cancel-checkout-btn" class="text-gray-500 hover:text-gray-800 transition-colors duration-200">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden order confirmation message -->
+    <div id="order-message" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center w-full max-w-sm">
+            <p id="message-text" class="text-lg font-bold text-gray-800 mb-4"></p>
+            <button id="close-message-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-300">
+                إغلاق
+            </button>
+        </div>
+    </div>
+
+    <!-- stc pay payment modal -->
+    <div id="stc-pay-modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">إتمام الدفع عبر stc pay</h2>
+            <p class="text-gray-600 mb-4">الرجاء تحويل المبلغ الإجمالي إلى أحد الأرقام التالية:</p>
+            <div class="flex justify-center items-center mb-4">
+                <span id="stc-pay-amount" class="text-4xl font-extrabold text-green-600">0 SAR</span>
+            </div>
+            <div class="space-y-2 mb-6">
+                <div class="flex items-center justify-between bg-gray-100 p-3 rounded-lg">
+                    <span id="stc-pay-number-1" class="text-lg font-semibold text-gray-800">05XXXXXXXX</span>
+                    <button class="copy-btn text-gray-500 hover:text-gray-800 transition-colors duration-200" data-number="05XXXXXXXX">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v2M8 5h2m0 0h2" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between bg-gray-100 p-3 rounded-lg">
+                    <span id="stc-pay-number-2" class="text-lg font-semibold text-gray-800">05XXXXXXXX</span>
+                    <button class="copy-btn text-gray-500 hover:text-gray-800 transition-colors duration-200" data-number="05XXXXXXXX">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v2M8 5h2m0 0h2" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 mb-6">بعد التحويل، الرجاء الضغط على "تم تأكيد الدفع".</p>
+            <button id="confirm-stc-pay" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full transition-colors duration-300 shadow-lg mb-2">
+                تم تأكيد الدفع
+            </button>
+            <button id="cancel-stc-pay" class="w-full text-gray-500 hover:text-gray-800 transition-colors duration-200">
+                إلغاء
+            </button>
+        </div>
+    </div>
+
+
+    <!-- JavaScript code to control the application -->
+    <script>
+        // Array containing product data
+        const products = [
+            {
+                id: 1,
+                name: { ar: 'زبدة الفول السوداني', en: 'Peanut Butter' },
+                description: { ar: 'طبيعية 100%، غنية بالبروتين.', en: '100% natural, rich in protein.' },
+                imageText: 'PB',
+                color: 'bg-yellow-50',
+                textColor: 'text-yellow-600',
+                sizes: [
+                    { size: { ar: 'صغير', en: 'Small' }, price: 19 },
+                ]
+            },
+            {
+                id: 2,
+                name: { ar: 'زبدة اللوز', en: 'Almond Butter' },
+                description: { ar: 'ناعمة وكريمية، مصدر ممتاز للفيتامينات.', en: 'Smooth and creamy, a great source of vitamins.' },
+                imageText: 'AB',
+                color: 'bg-gray-50',
+                textColor: 'text-gray-600',
+                sizes: [
+                    { size: { ar: 'صغير', en: 'Small' }, price: 37 },
+                ]
+            },
+            {
+                id: 3,
+                name: { ar: 'زبدة الكاجو', en: 'Cashew Butter' },
+                description: { ar: 'غنية بالدهون الصحية والمعادن.', en: 'Rich in healthy fats and minerals.' },
+                imageText: 'CB',
+                color: 'bg-purple-50',
+                textColor: 'text-purple-600',
+                sizes: [
+                    { size: { ar: 'صغير', en: 'Small' }, price: 40 },
+                ]
+            },
+            {
+                id: 4,
+                name: { ar: 'زبدة الفستق', en: 'Pistachio Butter' },
+                description: { ar: 'نكهة فريدة ومميزة.', en: 'A unique and distinctive flavor.' },
+                imageText: 'PI',
+                color: 'bg-green-50',
+                textColor: 'text-green-600',
+                sizes: [
+                    { size: { ar: 'صغير', en: 'Small' }, price: 65 },
+                ]
+            },
+            {
+                id: 5,
+                name: { ar: 'طحينة السمسم', en: 'Sesame Tahini' },
+                description: { ar: 'مصدر غني بالدهون الصحية والألياف.', en: 'A rich source of healthy fats and fiber.' },
+                imageText: 'TA',
+                color: 'bg-teal-50',
+                textColor: 'text-teal-600',
+                sizes: [
+                    { size: { ar: 'صغير', en: 'Small' }, price: 19 },
+                ]
+            },
+        ];
+
+        let cart = []; // Array to store cart items
+        let currentLang = 'ar'; // Set initial language to Arabic
+        let customerInfo = {}; // To temporarily store customer information
+
+        // List of countries and cities
+        const countries = {
+            'SA': { ar: 'السعودية', en: 'Saudi Arabia' },
+            'AE': { ar: 'الإمارات العربية المتحدة', en: 'United Arab Emirates' },
+            'KW': { ar: 'الكويت', en: 'Kuwait' },
+            'BH': { ar: 'البحرين', en: 'Bahrain' },
+            'OM': { ar: 'عُمان', en: 'Oman' },
+            'QA': { ar: 'قطر', en: 'Qatar' },
+            'OTHER': { ar: 'أخرى', en: 'Other' }
+        };
+
+        const cities = {
+            'SA': {
+                ar: ['الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'الظهران', 'القطيف', 'سيهات', 'عنك', 'تاروت', 'صفوى', 'أم الحمام', 'القديح', 'العوامية', 'الأحساء', 'الهفوف', 'المبرز', 'الجبيل', 'رأس تنورة', 'النعيرية', 'الخفجي', 'حفر الباطن', 'الخرج', 'بريدة', 'عنيزة', 'الرس', 'تبوك', 'خميس مشيط', 'أبها', 'نجران', 'جازان', 'الباحة', 'الطائف', 'ينبع', 'حائل', 'عرعر', 'سكاكا', 'القريات'],
+                en: ['Riyadh', 'Jeddah', 'Mecca', 'Medina', 'Dammam', 'Khobar', 'Dhahran', 'Qatif', 'Seihat', 'Anak', 'Tarout', 'Safwa', 'Om Alhamam', 'Qudaih', 'Al-Awamiyah', 'Al-Ahsa', 'Hofuf', 'Mubarraz', 'Jubail', 'Ras Tanura', 'Nuayriyah', 'Khafji', 'Hafar Al-Batin', 'Kharj', 'Buraydah', 'Unayzah', 'Al Rass', 'Tabuk', 'Khamis Mushait', 'Abha', 'Najran', 'Jizan', 'Al Bahah', 'Taif', 'Yanbu', 'Hail', 'Arar', 'Sakakah', 'Al Qurayyat']
+            },
+            'AE': { ar: ['دبي', 'أبو ظبي', 'الشارقة'], en: ['Dubai', 'Abu Dhabi', 'Sharjah'] },
+            'KW': { ar: ['مدينة الكويت'], en: ['Kuwait City'] },
+            'BH': { ar: ['المنامة'], en: ['Manama'] },
+            'OM': { ar: ['مسقط'], en: ['Muscat'] },
+            'QA': { ar: ['الدوحة'], en: ['Doha'] },
+            'OTHER': { ar: ['مدينة غير محددة'], en: ['Unspecified City'] }
+        };
+        
+        // Available pickup locations
+        const pickupLocations = {
+            'ar': ['القديح', 'إسكان الجش الجديد'],
+            'en': ['Al-Qudaih', 'Eskan Al-Jish Al-Jadid']
+        };
+
+        // Your payment information (these are dummy numbers, replace them)
+        const stcPayNumbers = {
+            'ar': ['05XXXXXXXX', '05XXXXXXXX'],
+            'en': ['05XXXXXXXX', '05XXXXXXXX']
+        };
+
+        // Get HTML elements to control
+        const langBtn = document.getElementById('lang-btn');
+        const mainTitle = document.getElementById('main-title');
+        const mainDescription = document.getElementById('main-description');
+        const productsContainer = document.getElementById('products-container');
+        const cartBtn = document.getElementById('cart-btn');
+        const cartCount = document.getElementById('cart-count');
+        const cartModal = document.getElementById('cart-modal');
+        const closeCartBtn = document.getElementById('close-cart-btn');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartTotalDisplay = document.getElementById('cart-total');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const checkoutModal = document.getElementById('checkout-modal');
+        const closeCheckoutBtn = document.getElementById('cancel-checkout-btn');
+        const checkoutForm = document.getElementById('checkout-form');
+        const customerNameInput = document.getElementById('customer-name');
+        const customerPhoneInput = document.getElementById('customer-phone');
+        const countrySelect = document.getElementById('country-select');
+        const citySelect = document.getElementById('city-select');
+        const customerAddressInput = document.getElementById('customer-address');
+        const orderMessage = document.getElementById('order-message');
+        const messageText = document.getElementById('message-text');
+        const closeMessageBtn = document.getElementById('close-message-btn');
+        const cartTitle = document.getElementById('cart-title');
+        const totalText = document.getElementById('total-text');
+        const checkoutTitle = document.getElementById('checkout-title');
+        const submitOrderBtn = document.getElementById('submit-order-btn');
+        const stcPayModal = document.getElementById('stc-pay-modal');
+        const stcPayAmountDisplay = document.getElementById('stc-pay-amount');
+        const stcPayNumber1Display = document.getElementById('stc-pay-number-1');
+        const stcPayNumber2Display = document.getElementById('stc-pay-number-2');
+        const confirmStcPayBtn = document.getElementById('confirm-stc-pay');
+        const cancelStcPayBtn = document.getElementById('cancel-stc-pay');
+        const deliveryFields = document.getElementById('delivery-fields');
+        const pickupFields = document.getElementById('pickup-fields');
+        const serviceTypeRadios = document.querySelectorAll('input[name="service-type"]');
+        const pickupLocationSelect = document.getElementById('pickup-location-select');
+        const customerNamePickupInput = document.getElementById('customer-name-pickup');
+        const customerPhonePickupInput = document.getElementById('customer-phone-pickup');
+
+        // Function to create a product card
+        const createProductCard = (product, lang) => {
+            const productCard = document.createElement('div');
+            productCard.className = `${product.color} p-4 rounded-lg flex flex-col sm:flex-row items-center shadow-sm`;
+            
+            // Build size options
+            const sizeOptions = product.sizes.map(size => {
+                return `<option value="${size.price}">${size.size[lang]} - ${size.price} SAR</option>`;
+            }).join('');
+            
+            productCard.innerHTML = `
+                <img src="https://placehold.co/64x64/${product.color.split('-')[1]}/333?text=${product.imageText}" alt="Image of ${product.name[lang]}" class="rounded-full w-16 h-16 mr-0 sm:mr-4 mb-2 sm:mb-0">
+                <div class="flex-grow text-center sm:text-left">
+                    <h2 class="font-bold text-lg text-gray-800">${product.name[lang]}</h2>
+                    <p class="text-sm text-gray-500">${product.description[lang]}</p>
+                    <div class="mt-2">
+                        <select id="size-select-${product.id}" class="rounded-lg border border-gray-300 py-1 px-2 text-sm text-gray-700">
+                            ${sizeOptions}
+                        </select>
+                    </div>
+                </div>
+                <button data-product-id="${product.id}" class="add-to-cart-btn mt-4 sm:mt-0 bg-white hover:bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-300">
+                    ${lang === 'ar' ? 'أضف للعربة' : 'Add to Cart'}
+                </button>
+            `;
+            // Add margin to fix alignment in RTL
+            if (lang === 'ar') {
+                const textContainer = productCard.querySelector('.flex-grow');
+                const image = productCard.querySelector('img');
+                textContainer.classList.remove('sm:text-left');
+                textContainer.classList.add('sm:text-right');
+                image.classList.remove('mr-0', 'sm:mr-4');
+                image.classList.add('ml-0', 'sm:ml-4');
+            }
+            return productCard;
+        };
+
+        // Function to add a product to the cart
+        const addToCart = (productId) => {
+            const product = products.find(p => p.id == productId);
+            const sizeSelect = document.getElementById(`size-select-${productId}`);
+            const selectedPrice = parseInt(sizeSelect.value);
+            const selectedSize = product.sizes.find(s => s.price === selectedPrice);
+
+            // Use a combination of id and price to uniquely identify the product in the cart
+            const cartItemId = `${productId}-${selectedPrice}`;
+            const cartItem = cart.find(item => item.cartItemId === cartItemId);
+            
+            if (cartItem) {
+                cartItem.quantity++;
+            } else {
+                cart.push({ ...product, price: selectedPrice, size: selectedSize.size[currentLang], quantity: 1, cartItemId });
+            }
+            updateCartUI();
+        };
+
+        // Function to remove a product from the cart
+        const removeFromCart = (cartItemId) => {
+            cart = cart.filter(item => item.cartItemId !== cartItemId);
+            updateCartUI();
+        };
+
+        // Function to update the cart UI
+        const updateCartUI = () => {
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `<p class="text-center text-gray-500">${currentLang === 'ar' ? 'العربة فارغة.' : 'Your cart is empty.'}</p>`;
+            } else {
+                cart.forEach(item => {
+                    const cartItemEl = document.createElement('div');
+                    cartItemEl.className = 'flex justify-between items-center border-b pb-2';
+                    cartItemEl.innerHTML = `
+                        <div>
+                            <p class="font-bold text-gray-800">${item.name[currentLang]}</p>
+                            <p class="text-sm text-gray-500">${item.size} - ${item.price} SAR x ${item.quantity}</p>
+                        </div>
+                        <button data-cart-item-id="${item.cartItemId}" class="remove-from-cart-btn text-red-500 hover:text-red-700 transition-colors duration-200">
+                            ${currentLang === 'ar' ? 'إزالة' : 'Remove'}
+                        </button>
+                    `;
+                    // Change alignment for RTL
+                    if (currentLang === 'ar') {
+                        cartItemEl.classList.add('flex-row-reverse');
+                    }
+                    cartItemsContainer.appendChild(cartItemEl);
+                    total += item.price * item.quantity;
+                });
+            }
+            cartTotalDisplay.textContent = `${total} SAR`;
+            cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            
+            // Add event listeners for remove buttons after creating the elements
+            document.querySelectorAll('.remove-from-cart-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const cartItemId = e.target.dataset.cartItemId;
+                    removeFromCart(cartItemId);
+                });
+            });
+        };
+
+        // Function to display all products
+        const renderProducts = (lang) => {
+            productsContainer.innerHTML = ''; // Empty the container
+            products.forEach(product => {
+                productsContainer.appendChild(createProductCard(product, lang));
+            });
+            // Add event listeners for "Add to Cart" buttons
+            document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const productId = e.target.dataset.productId;
+                    addToCart(productId);
+                });
+            });
+        };
+        
+        // Function to populate the country list
+        const populateCountries = (lang) => {
+            countrySelect.innerHTML = '';
+            for (const key in countries) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = countries[key][lang];
+                countrySelect.appendChild(option);
+            }
+            // Select Saudi Arabia as the default option
+            countrySelect.value = 'SA';
+            populateCities(countrySelect.value, lang);
+        };
+
+        // Function to populate the city list based on country
+        const populateCities = (countryCode, lang) => {
+            citySelect.innerHTML = '';
+            const citiesList = cities[countryCode][lang];
+            citiesList.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+            });
+        };
+
+        // Function to populate the pickup location list
+        const populatePickupLocations = (lang) => {
+            pickupLocationSelect.innerHTML = '';
+            pickupLocations[lang].forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                option.textContent = location;
+                pickupLocationSelect.appendChild(option);
+            });
+        };
+
+        // Function to toggle language
+        const toggleLanguage = () => {
+            if (currentLang === 'ar') {
+                document.documentElement.lang = 'en';
+                document.body.style.direction = 'ltr';
+                document.body.style.textAlign = 'left';
+                langBtn.textContent = 'عربي';
+                mainTitle.textContent = 'Ms. Nut';
+                mainDescription.textContent = 'The best natural and fresh nut butters, healthy and nutritious.';
+                cartTitle.textContent = 'Shopping Cart';
+                totalText.textContent = 'Total:';
+                checkoutBtn.textContent = 'Checkout';
+                checkoutTitle.textContent = 'Shipping Information';
+                submitOrderBtn.textContent = 'Submit Order';
+                closeCheckoutBtn.textContent = 'Cancel';
+                messageText.innerHTML = 'Your order has been received! We will contact you shortly.';
+                closeMessageBtn.textContent = 'Close';
+                document.querySelector('label[for="customer-name"]').textContent = 'Name:';
+                document.querySelector('label[for="customer-phone"]').textContent = 'Phone Number:';
+                document.querySelector('label[for="country-select"]').textContent = 'Country:';
+                document.querySelector('label[for="city-select"]').textContent = 'City:';
+                document.querySelector('label[for="customer-address"]').textContent = 'Street & Building Address:';
+                document.querySelector('label[for="customer-name-pickup"]').textContent = 'Name:';
+                document.querySelector('label[for="customer-phone-pickup"]').textContent = 'Phone Number:';
+                document.querySelector('label[for="pickup-location-select"]').textContent = 'Pickup Location:';
+                document.querySelector('label[for="customer-address"]').textContent = 'Street & Building Address:';
+                document.querySelector('label[for="service-type"] span').textContent = 'Service Type:';
+                document.querySelector('input[value="delivery"]').nextElementSibling.textContent = 'Delivery';
+                document.querySelector('input[value="pickup"]').nextElementSibling.textContent = 'Pickup from branch';
+                document.querySelector('label[for="payment-method"] span').textContent = 'Payment Method:';
+                document.querySelector('input[value="cash-on-delivery"]').nextElementSibling.textContent = 'Cash on Delivery';
+                document.querySelector('h2').textContent = 'Complete Payment via stc pay';
+                document.querySelector('p').textContent = 'Please transfer the total amount to one of the following numbers:';
+                document.querySelector('#confirm-stc-pay').textContent = 'Payment Confirmed';
+                document.querySelector('#cancel-stc-pay').textContent = 'Cancel';
+                currentLang = 'en';
+            } else {
+                document.documentElement.lang = 'ar';
+                document.body.style.direction = 'rtl';
+                document.body.style.textAlign = 'right';
+                langBtn.textContent = 'English';
+                mainTitle.textContent = 'مس بندق';
+                mainDescription.textContent = 'أفضل أنواع زبدة المكسرات الطبيعية الطازجة، صحية ومغذية.';
+                cartTitle.textContent = 'سلة التسوق';
+                totalText.textContent = 'الإجمالي:';
+                checkoutBtn.textContent = 'الدفع';
+                checkoutTitle.textContent = 'معلومات الشحن';
+                submitOrderBtn.textContent = 'إرسال الطلب';
+                closeCheckoutBtn.textContent = 'إلغاء';
+                messageText.innerHTML = 'تم استلام طلبك! سنتواصل معك قريباً.';
+                closeMessageBtn.textContent = 'إغلاق';
+                document.querySelector('label[for="customer-name"]').textContent = 'الاسم:';
+                document.querySelector('label[for="customer-phone"]').textContent = 'رقم الجوال:';
+                document.querySelector('label[for="country-select"]').textContent = 'الدولة:';
+                document.querySelector('label[for="city-select"]').textContent = 'المدينة:';
+                document.querySelector('label[for="customer-address"]').textContent = 'عنوان الشارع والمبنى:';
+                document.querySelector('label[for="customer-name-pickup"]').textContent = 'الاسم:';
+                document.querySelector('label[for="customer-phone-pickup"]').textContent = 'رقم الجوال:';
+                document.querySelector('label[for="pickup-location-select"]').textContent = 'موقع الاستلام:';
+                document.querySelector('label[for="service-type"] span').textContent = 'نوع الخدمة:';
+                document.querySelector('input[value="delivery"]').nextElementSibling.textContent = 'توصيل';
+                document.querySelector('input[value="pickup"]').nextElementSibling.textContent = 'استلام من الفرع';
+                document.querySelector('label[for="payment-method"] span').textContent = 'طريقة الدفع:';
+                document.querySelector('input[value="cash-on-delivery"]').nextElementSibling.textContent = 'الدفع عند الاستلام';
+                document.querySelector('h2').textContent = 'إتمام الدفع عبر stc pay';
+                document.querySelector('p').textContent = 'الرجاء تحويل المبلغ الإجمالي إلى أحد الأرقام التالية:';
+                document.querySelector('#confirm-stc-pay').textContent = 'تم تأكيد الدفع';
+                document.querySelector('#cancel-stc-pay').textContent = 'إلغاء';
+                currentLang = 'ar';
+            }
+            // Re-render products and cart in the new language
+            renderProducts(currentLang);
+            updateCartUI();
+            populateCountries(currentLang);
+            populatePickupLocations(currentLang);
+            toggleServiceFields(); // Re-toggle to ensure field visibility is correct
+        };
+
+        // Function to show the cart
+        const showCart = () => {
+            cartModal.classList.remove('hidden');
+            setTimeout(() => {
+                cartModal.classList.add('active');
+            }, 10);
+        };
+
+        // Function to hide the cart
+        const hideCart = () => {
+            cartModal.classList.remove('active');
+            setTimeout(() => {
+                cartModal.classList.add('hidden');
+            }, 300);
+        };
+        
+        // Function to show the checkout form
+        const showCheckout = () => {
+            if (cart.length === 0) {
+                showOrderMessage(currentLang === 'ar' ? 'العربة فارغة. يرجى إضافة منتجات قبل الدفع.' : 'Your cart is empty. Please add products before checking out.');
+                return;
+            }
+            hideCart();
+            checkoutModal.classList.remove('hidden');
+            setTimeout(() => {
+                checkoutModal.classList.add('active');
+            }, 10);
+        };
+
+        // Function to hide the checkout form
+        const hideCheckout = () => {
+            checkoutModal.classList.remove('active');
+            setTimeout(() => {
+                checkoutModal.classList.add('hidden');
+            }, 300);
+        };
+
+        // Function to show the order message
+        const showOrderMessage = (message) => {
+            messageText.innerHTML = message;
+            orderMessage.classList.remove('hidden');
+            hideCheckout();
+            hideStcPayModal();
+            setTimeout(() => {
+                orderMessage.classList.add('active');
+            }, 10);
+        };
+
+        // Function to hide the order message
+        const hideOrderMessage = () => {
+            orderMessage.classList.remove('active');
+            setTimeout(() => {
+                orderMessage.classList.add('hidden');
+            }, 300);
+        };
+
+        // Function to show the stc pay modal
+        const showStcPayModal = () => {
+            hideCheckout();
+            stcPayModal.classList.remove('hidden');
+            setTimeout(() => {
+                stcPayModal.classList.add('active');
+            }, 10);
+        };
+
+        // Function to hide the stc pay modal
+        const hideStcPayModal = () => {
+            stcPayModal.classList.remove('active');
+            setTimeout(() => {
+                stcPayModal.classList.add('hidden');
+            }, 300);
+        };
+        
+        // Function to copy text to clipboard
+        const copyToClipboard = (text) => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            // You can add a confirmation message to the customer here
+        };
+        
+        // Function to toggle between delivery and pickup fields
+        const toggleServiceFields = () => {
+            const selectedService = document.querySelector('input[name="service-type"]:checked').value;
+            if (selectedService === 'delivery') {
+                deliveryFields.classList.remove('hidden');
+                pickupFields.classList.add('hidden');
+                customerNamePickupInput.required = false;
+                customerPhonePickupInput.required = false;
+                customerNameInput.required = true;
+                customerPhoneInput.required = true;
+                countrySelect.required = true;
+                citySelect.required = true;
+                customerAddressInput.required = true;
+            } else {
+                deliveryFields.classList.add('hidden');
+                pickupFields.classList.remove('hidden');
+                customerNamePickupInput.required = true;
+                customerPhonePickupInput.required = true;
+                customerNameInput.required = false;
+                customerPhoneInput.required = false;
+                countrySelect.required = false;
+                citySelect.required = false;
+                customerAddressInput.required = false;
+            }
+        };
+
+
+        // Add event listeners
+        langBtn.addEventListener('click', toggleLanguage);
+        cartBtn.addEventListener('click', showCart);
+        closeCartBtn.addEventListener('click', hideCart);
+        checkoutBtn.addEventListener('click', showCheckout);
+        closeCheckoutBtn.addEventListener('click', hideCheckout);
+        closeMessageBtn.addEventListener('click', hideOrderMessage);
+        cancelStcPayBtn.addEventListener('click', hideStcPayModal);
+        
+        // Listener for changing the city list when the country changes
+        countrySelect.addEventListener('change', (e) => {
+            populateCities(e.target.value, currentLang);
+        });
+
+        // Listener to toggle service type
+        serviceTypeRadios.forEach(radio => {
+            radio.addEventListener('change', toggleServiceFields);
+        });
+
+        // Handle form submission
+        checkoutForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // Temporarily save customer information
+            const selectedService = document.querySelector('input[name="service-type"]:checked').value;
+            let info;
+            if (selectedService === 'delivery') {
+                info = {
+                    name: customerNameInput.value,
+                    phone: customerPhoneInput.value,
+                    countryCode: countrySelect.value,
+                    city: citySelect.value,
+                    address: customerAddressInput.value,
+                    paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
+                    serviceType: 'Delivery'
+                };
+            } else {
+                info = {
+                    name: customerNamePickupInput.value,
+                    phone: customerPhonePickupInput.value,
+                    pickupLocation: pickupLocationSelect.value,
+                    paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
+                    serviceType: 'Pickup from branch'
+                };
+            }
+            customerInfo = info;
+
+            const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            
+            if (customerInfo.paymentMethod === 'stc-pay') {
+                stcPayAmountDisplay.textContent = `${total} SAR`;
+                stcPayNumber1Display.textContent = stcPayNumbers[currentLang][0];
+                stcPayNumber2Display.textContent = stcPayNumbers[currentLang][1];
+                document.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', () => copyToClipboard(btn.dataset.number));
+                });
+                showStcPayModal();
+            } else {
+                // Cash on delivery case
+                generateOrderSummaryMessage(customerInfo, total, 'الدفع عند الاستلام');
+            }
+        });
+
+        // Function to create and display the order confirmation message
+        const generateOrderSummaryMessage = (info, total, paymentMethod) => {
+            let orderSummary = '';
+            cart.forEach(item => {
+                orderSummary += `<li>${item.name[currentLang]} (${item.size}): ${item.quantity} x ${item.price} SAR</li>`;
+            });
+            
+            let addressDetails = '';
+            if (info.serviceType === 'Delivery') {
+                addressDetails = `
+                    <li><strong>الدولة:</strong> ${countries[info.countryCode][currentLang]}</li>
+                    <li><strong>المدينة:</strong> ${info.city}</li>
+                    <li><strong>العنوان:</strong> ${info.address}</li>
+                `;
+            } else {
+                addressDetails = `
+                    <li><strong>موقع الاستلام:</strong> ${info.pickupLocation}</li>
+                `;
+            }
+
+            const message = `
+                <p>أهلاً، ${info.name}!</p>
+                <p>تم استلام طلبك بنجاح. سنتواصل معك قريباً.</p>
+                <br>
+                <p><strong>تفاصيل الطلب:</strong></p>
+                <ul class="text-right">
+                    ${orderSummary}
+                </ul>
+                <p class="font-bold text-xl mt-4">الإجمالي: ${total} SAR</p>
+                <br>
+                <p><strong>معلومات الطلب:</strong></p>
+                <ul class="text-right">
+                    <li><strong>الاسم:</strong> ${info.name}</li>
+                    <li><strong>رقم الجوال:</strong> ${info.phone}</li>
+                    <li><strong>نوع الخدمة:</strong> ${info.serviceType === 'Delivery' ? 'توصيل' : 'استلام من الفرع'}</li>
+                    ${addressDetails}
+                </ul>
+                <br>
+                <p><strong>طريقة الدفع:</strong> ${paymentMethod}</p>
+            `;
+            
+            showOrderMessage(message);
+            
+            // Empty the cart after submitting the order
+            cart = [];
+            updateCartUI();
+        };
+
+        // Listener for the "Payment Confirmed" button
+        confirmStcPayBtn.addEventListener('click', () => {
+            const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            generateOrderSummaryMessage(customerInfo, total, 'stc pay');
+        });
+
+
+        // Display products and populate lists on first page load
+        renderProducts(currentLang);
+        updateCartUI();
+        populateCountries(currentLang);
+        populatePickupLocations(currentLang);
+        toggleServiceFields(); // Hide pickup fields initially
+    </script>
+</body>
+</html>
